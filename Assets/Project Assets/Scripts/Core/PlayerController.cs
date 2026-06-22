@@ -19,6 +19,8 @@ public class PlayerController : MonoBehaviour
     private float verticalVelocity = 0f;
     private const float gravity = -9.81f;
 
+    public Animator animator; // Opcional: para animar al jugador (ej. caminar)
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -53,6 +55,8 @@ public class PlayerController : MonoBehaviour
 
         Vector3 velocity = move * walkSpeed;
         velocity.y = verticalVelocity;
+
+        animator.SetFloat("Speed", move.magnitude); // Opcional: para animar al jugador (ej. caminar)
 
         controller.Move(velocity * Time.deltaTime);
     }

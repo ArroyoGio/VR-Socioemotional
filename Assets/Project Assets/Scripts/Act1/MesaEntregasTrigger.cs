@@ -1,45 +1,49 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Zona de entrega de la mesa. NO usa ningún Collider ni Trigger — se
-// registra en una lista estática propia, y PlayerInteractor la consulta
-// directamente por distancia SOLO en el instante en que el jugador
-// presiona E. Cero dependencia de física, cero riesgo de tunneling,
-// funciona igual caminando, girando rápido, o con teletransporte en VR.
-//
-// Esta clase NUNCA decide por sí sola entregar algo — solo responde
-// "¿puedo recibir esto ahora?" (PuedeEntregar) y, si PlayerInteractor
-// confirma, ejecuta la entrega (Entregar). El jugador es quien decide.
-
 public class MesaEntregasTrigger : MonoBehaviour
 {
     private static readonly List<MesaEntregasTrigger> zonasActivas = new List<MesaEntregasTrigger>();
 
     [Header("Referencias")]
     public Act1Manager act1Manager;
-    public Transform snapPoint; // dónde se acomoda visualmente el proyecto sobre la mesa
+    public PlayerInteractor playerInteractor;
+    public Transform snapPoint;
 
     [Header("Configuración")]
-    public float radioDeteccion = 1f; // qué tan cerca debe estar el proyecto del SnapPoint
+    public float radioEntrega = 0.6f;       // distancia para snap automático al presionar E
+    public float radioAproximacion = 2.5f;  // distancia para disparar el primer diálogo
 
     private bool primeraEntrega = false;
+    private bool aproximacionAvisada = false;
     private float tiempoInicioVentana;
 
     void OnEnable() => zonasActivas.Add(this);
     void OnDisable() => zonasActivas.Remove(this);
 
-    // Llamado por PlayerInteractor: ¿esta zona acepta el objeto ahora mismo?
+    void Update()
+    {
+        if (playerInteractor == null || act1Manager == null) return;
+
+        GameObject proyecto = playerInteractor.GetHeldObject();
+        if (proyecto == null || !proyecto.CompareTag("Proyecto")) return;
+
+        // Avisa al Act1Manager la posición del proyecto para que mida proximidad
+        if (!aproximacionAvisada)
+        {
+            act1Manager.SetProyectoTransform(proyecto.transform);
+        }
+    }
+
     public bool PuedeEntregar(GameObject objeto)
     {
         if (objeto == null || !objeto.CompareTag("Proyecto")) return false;
         if (snapPoint == null) return false;
 
         float distancia = Vector3.Distance(objeto.transform.position, snapPoint.position);
-        return distancia <= radioDeteccion;
+        return distancia <= radioEntrega;
     }
 
-    // Llamado por PlayerInteractor SOLO después de confirmar PuedeEntregar().
-    // Coloca el objeto en el SnapPoint y registra el resultado en el Acto 1.
     public void Entregar(GameObject objeto)
     {
         objeto.transform.SetParent(snapPoint);
@@ -47,9 +51,7 @@ public class MesaEntregasTrigger : MonoBehaviour
         objeto.transform.localRotation = Quaternion.identity;
 
         if (objeto.TryGetComponent(out Rigidbody rb))
-        {
-            rb.isKinematic = true; // se queda fijo, sin gravedad, hasta que se vuelva a agarrar
-        }
+            rb.isKinematic = true;
 
         if (!primeraEntrega)
         {
@@ -64,9 +66,6 @@ public class MesaEntregasTrigger : MonoBehaviour
         }
     }
 
-    // Busca entre todas las zonas activas de la escena si alguna acepta
-    // este objeto en este momento. Por eso PlayerInteractor no necesita
-    // una referencia directa a ninguna mesa específica.
     public static MesaEntregasTrigger BuscarZonaParaEntregar(GameObject objeto)
     {
         foreach (MesaEntregasTrigger zona in zonasActivas)

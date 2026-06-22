@@ -1,9 +1,46 @@
-﻿title: Acto1_Entrega
+﻿title: Acto1_Intro
 ---
-Profesor: Buenas. Déjalo acá.
-Profesor: A ver... mmm.
-Profesor: Tiene buena base, pero le falta trabajo todavía.
-Profesor: Esto no está mal para un primer intento. Pero puedes mejorarlo bastante — la parte de ensamblaje todavía no cierra bien.
-Profesor: Te lo dejo a tu criterio. Yo solo evalúo lo que entregues al final del ciclo.
+Narrador: Okay. Primer piso.
+Narrador: Taller de Prototipos tiene que estar por acá.
+
+Narrador: Esta no.
+Narrador: Esta tampoco.
+Narrador: ¿Nadie pone un letrero?
+
+Narrador: Llevas tres semanas viniendo a este instituto y todavía no memorizas bien dónde queda cada salón.
+Narrador: No es que seas despistado. Es que todo se ve igual.
+
+Narrador: Espera.
+Narrador: Esa está abierta.
+
+Narrador: Se escucha gente adentro. Laptops. Alguien moviendo algo.
+Narrador: Tiene que ser ahí.
+
+Narrador: Sí. Es ahí.
+Narrador: Tu proyecto está adentro, en tu estación.
+Narrador: Lo armaste varios días. No está perfecto — hay una parte que dejaste para después y ese después nunca llegó.
+Narrador: Pero hoy es solo la entrega parcial. Un avance. No la nota final.
+Narrador: ¿Está listo? Más o menos.
+Narrador: ¿Tienes tiempo de arreglarlo en el pasillo ahora mismo? No.
+Narrador: Entra.
+===
+
+title: Acto1_Aproximacion
+---
+Profesor: Buenas. ¿Ese es tu avance?
+Profesor: Déjalo acá en la mesa cuando estés listo.
+===
+
+title: Acto1_Entrega
+---
+Profesor: A ver... mmm. Tiene buena base, pero le falta trabajo todavía.
+Profesor: La parte de ensamblaje todavía no cierra bien, acá, en esta sección.
+Profesor: Míralo, te dejé algunos comentarios. Te lo dejo a tu criterio.
+Profesor: Yo solo evalúo lo que entregues al final del ciclo.
 Profesor: Tómate el tiempo que necesites.
+===
+
+title: Acto1_Reintento
+---
+Profesor: Bien. Eso está mejor.
 ===
