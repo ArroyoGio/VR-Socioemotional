@@ -12,7 +12,7 @@ Narrador: No es que seas despistado. Es que todo se ve igual.
 
 Narrador: Espera.
 Narrador: Esa está abierta.
-
+<<abrir_puerta>>
 Narrador: Se escucha gente adentro. Laptops. Alguien moviendo algo.
 Narrador: Tiene que ser ahí.
 
@@ -38,6 +38,11 @@ Profesor: La parte de ensamblaje todavía no cierra bien, acá, en esta sección
 Profesor: Míralo, te dejé algunos comentarios. Te lo dejo a tu criterio.
 Profesor: Yo solo evalúo lo que entregues al final del ciclo.
 Profesor: Tómate el tiempo que necesites.
+===
+
+title: Acto1_Reaccion
+---
+Yo: ¿Debería hacer algo?
 ===
 
 title: Acto1_Reintento

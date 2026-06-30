@@ -1,22 +1,22 @@
 using UnityEngine;
 
-// Va en el GameObject del jugador. Detecta hacia qué objeto interactuable
-// está mirando (raycast desde la cámara) y es la ÚNICA autoridad sobre
-// qué hace la tecla E: recoger, soltar, o entregar.
+// Va en el GameObject del jugador. Detecta hacia quï¿½ objeto interactuable
+// estï¿½ mirando (raycast desde la cï¿½mara) y es la ï¿½NICA autoridad sobre
+// quï¿½ hace la tecla E: recoger, soltar, o entregar.
 //
 // IMPORTANTE: este script NO conoce a MesaEntregasTrigger por una
-// referencia directa — le pregunta a la lista estática de zonas activas
-// si alguna acepta el objeto que carga. Así PlayerInteractor sigue siendo
-// genérico y reutilizable para cualquier zona de entrega futura (Acto 2,
-// Acto 3, etc.) sin necesitar más wiring en el Inspector.
+// referencia directa ï¿½ le pregunta a la lista estï¿½tica de zonas activas
+// si alguna acepta el objeto que carga. Asï¿½ PlayerInteractor sigue siendo
+// genï¿½rico y reutilizable para cualquier zona de entrega futura (Acto 2,
+// Acto 3, etc.) sin necesitar mï¿½s wiring en el Inspector.
 
 public class PlayerInteractor : MonoBehaviour
 {
     [Header("Referencias")]
     public Camera playerCamera;
-    public Transform holdPoint; // punto frente a la cámara donde "flota" el objeto cargado
+    public Transform holdPoint; // punto frente a la cï¿½mara donde "flota" el objeto cargado
 
-    [Header("Configuración")]
+    [Header("Configuraciï¿½n")]
     public float interactRange = 3f;
     public LayerMask interactableLayer;
 
@@ -48,14 +48,14 @@ public class PlayerInteractor : MonoBehaviour
     void HandleEntregaOSuelta()
     {
         // Pregunta a TODAS las zonas de entrega activas si alguna acepta
-        // el objeto en este instante. Esto se evalúa solo aquí, una vez,
-        // nunca en un Update() continuo — por eso no hay entrega automática.
+        // el objeto en este instante. Esto se evalï¿½a solo aquï¿½, una vez,
+        // nunca en un Update() continuo ï¿½ por eso no hay entrega automï¿½tica.
         MesaEntregasTrigger zona = MesaEntregasTrigger.BuscarZonaParaEntregar(heldObject);
 
         if (zona != null)
         {
             GameObject objetoEntregado = heldObject;
-            heldObject = null; // la zona toma posesión del objeto
+            heldObject = null; // la zona toma posesiï¿½n del objeto
             zona.Entregar(objetoEntregado);
         }
         else
@@ -71,7 +71,9 @@ public class PlayerInteractor : MonoBehaviour
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
         {
-            currentTarget = hit.collider.GetComponent<InteractableObject>();
+            InteractableObject obj = hit.collider.GetComponent<InteractableObject>();
+            if (obj != null && obj.canInteract)
+                currentTarget = obj;
         }
     }
 

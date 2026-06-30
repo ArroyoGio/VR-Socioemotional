@@ -3,11 +3,8 @@
   "mcp": {
     "ai-game-developer": {
       "enabled": true,
-      "headers": {
-        "Authorization": "Bearer SiMf9meWKz_YBxGpOHSzkUlxsY6522IyD7aToCjwQ0Q"
-      },
       "type": "remote",
-      "url": "http://localhost:21193"
+      "url": "http://localhost:20646"
     }
   }
 }

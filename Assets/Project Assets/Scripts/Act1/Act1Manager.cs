@@ -13,40 +13,44 @@ public class Act1Manager : MonoBehaviour
     public Transform profesorMirada;
     public Camera playerCamera;
     public GameObject notaObjeto;          // empieza INACTIVO en el Inspector
-    public Animator profesorAnimator;      // opcional — para animación de retirarse
+    public Animator profesorAnimator;      // opcional ï¿½ para animaciï¿½n de retirarse
 
     [Header("Clips de audio del profesor")]
     public AudioSource profesorAudioSource;
-    public AudioClip clipAproximacion;       // "Buenas. ¿Ese es tu avance?"
+    public AudioClip clipAproximacion;       // "Buenas. ï¿½Ese es tu avance?"
     public AudioClip clipRevisionSilencio;   // sonido ambiente / pausa mientras revisa
     public AudioClip clipBuenaBase;          // "A ver... mmm. Tiene buena base..."
     public AudioClip clipFeedbackDetallado;  // "La parte de ensamblaje..."
-    public AudioClip clipCriterio;           // "Míralo, te dejé algunos comentarios..."
-    public AudioClip clipTomateElTiempo;     // "Tómate el tiempo que necesites."
-    public AudioClip clipBienSigueAsi;       // Ruta A: "Bien. Eso está mejor."
+    public AudioClip clipCriterio;           // "Mï¿½ralo, te dejï¿½ algunos comentarios..."
+    public AudioClip clipTomateElTiempo;     // "Tï¿½mate el tiempo que necesites."
+    public AudioClip clipBienSigueAsi;       // Ruta A: "Bien. Eso estï¿½ mejor."
 
-    [Header("Compañero de fondo (Fase 1E)")]
+    [Header("Compaï¿½ero de fondo (Fase 1E)")]
     public AudioSource companeroAudioSource;
     public AudioClip clipCompanero;
     public float tiempoLineaCompanero = 10f;
 
-    [Header("Configuración")]
+    [Header("Post-entrega")]
+    public PlayerController playerController;
+    public InteractableObject laptopInteractable;
+
+    [Header("Configuraciï¿½n")]
     public float ventanaMirada = 2.5f;
     public float ventanaReintento = 30f;
-    public float radioAproximacion = 2f;   // distancia para disparar el diálogo de aproximación
+    public float radioAproximacion = 2f;   // distancia para disparar el diï¿½logo de aproximaciï¿½n
 
     private bool aproximacionDisparada = false;
     private bool entregaRealizada = false;
     private bool decisionTomada = false;
-    private Transform proyectoTransform;   // para medir la distancia de aproximación
+    private Transform proyectoTransform;   // para medir la distancia de aproximaciï¿½n
 
-    // MesaEntregasTrigger llama esto al detectar que el jugador está cerca
+    // MesaEntregasTrigger llama esto al detectar que el jugador estï¿½ cerca
     // con el proyecto en mano (ANTES de soltar)
     public void SetProyectoTransform(Transform t) => proyectoTransform = t;
 
     void Update()
     {
-        // Detecta proximidad del proyecto para disparar el primer diálogo
+        // Detecta proximidad del proyecto para disparar el primer diï¿½logo
         if (!aproximacionDisparada && proyectoTransform != null)
         {
             float dist = Vector3.Distance(proyectoTransform.position, transform.position);
@@ -76,12 +80,27 @@ public class Act1Manager : MonoBehaviour
         if (notaObjeto != null)
         {
             notaObjeto.SetActive(true);
-            Debug.Log("Nota mostrada después del diálogo inicial.");
+            Debug.Log("Nota mostrada despuï¿½s del diï¿½logo inicial.");
         }
+
+        yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
+
+        if (playerController != null)
+            playerController.enabled = false;
 
         yield return new WaitForSeconds(3f);
 
-        Debug.Log("Iniciando ventana de decisión desde código.");
+        dialogueRunner.StartDialogue("Acto1_Reaccion");
+
+        yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
+
+        if (laptopInteractable != null)
+            laptopInteractable.canInteract = true;
+
+        if (playerController != null)
+            playerController.enabled = true;
+
+        Debug.Log("Iniciando ventana de decisiï¿½n desde cï¿½digo.");
         IniciarVentanaDecision();
     }
 
@@ -92,9 +111,9 @@ public class Act1Manager : MonoBehaviour
         decisionTomada = true;
 
         EventLogger.Instance.RegistrarEvento(
-            competencia: "Autorregulación emocional (persistencia)",
-            situacion: "Recibió retroalimentación negativa en su primera entrega",
-            comportamiento: "Retomó el proyecto, lo corrigió y volvió a entregarlo",
+            competencia: "Autorregulaciï¿½n emocional (persistencia)",
+            situacion: "Recibiï¿½ retroalimentaciï¿½n negativa en su primera entrega",
+            comportamiento: "Retomï¿½ el proyecto, lo corrigiï¿½ y volviï¿½ a entregarlo",
             tiempo: tiempoTranscurrido,
             tendencia: "fortaleza"
         );
@@ -109,7 +128,7 @@ public class Act1Manager : MonoBehaviour
     // ??? YARN COMMANDS ???????????????????????????????????????????????????????
 
     // <<reproducir_linea "nombre_clip">>
-    // Yarn espera a que el audio termine antes de seguir con la siguiente línea
+    // Yarn espera a que el audio termine antes de seguir con la siguiente lï¿½nea
     [YarnCommand("reproducir_linea")]
     public IEnumerator ReproducirLinea(string nombreClip)
     {
@@ -119,7 +138,7 @@ public class Act1Manager : MonoBehaviour
         {
             profesorAudioSource.clip = clip;
             profesorAudioSource.Play();
-            yield return new WaitForSeconds(clip.length + 0.2f); // pequeño respiro entre líneas
+            yield return new WaitForSeconds(clip.length + 0.2f); // pequeï¿½o respiro entre lï¿½neas
         }
         else
         {
@@ -128,7 +147,7 @@ public class Act1Manager : MonoBehaviour
     }
 
     // <<mostrar_nota>>
-    // La nota aparece EXACTAMENTE aquí, no al inicio del diálogo
+    // La nota aparece EXACTAMENTE aquï¿½, no al inicio del diï¿½logo
     [YarnCommand("mostrar_nota")]
     public void MostrarNota()
     {
@@ -153,8 +172,8 @@ public class Act1Manager : MonoBehaviour
         string tendencia = porcentaje >= 50f ? "fortaleza" : "debilidad";
 
         EventLogger.Instance.RegistrarEvento(
-            competencia: "Autorregulación emocional (control emocional)",
-            situacion: "El profesor explica su retroalimentación frente al jugador",
+            competencia: "Autorregulaciï¿½n emocional (control emocional)",
+            situacion: "El profesor explica su retroalimentaciï¿½n frente al jugador",
             comportamiento: $"Sostuvo la mirada el {porcentaje:F0}% del tiempo",
             tiempo: ventanaMirada,
             tendencia: tendencia
@@ -163,7 +182,7 @@ public class Act1Manager : MonoBehaviour
     }
 
     // <<profesor_retirarse>>
-    // Activa animación de caminar hacia el escritorio (opcional)
+    // Activa animaciï¿½n de caminar hacia el escritorio (opcional)
     [YarnCommand("profesor_retirarse")]
     public void ProfesorRetirarse()
     {
@@ -172,14 +191,14 @@ public class Act1Manager : MonoBehaviour
     }
 
     // <<iniciar_ventana_decision>>
-    // Arranca el timer de 30s y el compañero de fondo
+    // Arranca el timer de 30s y el compaï¿½ero de fondo
     [YarnCommand("iniciar_ventana_decision")]
     public void IniciarVentanaDecision()
     {
         StartCoroutine(VentanaDeDecision());
     }
 
-    // ??? MÉTODOS INTERNOS ????????????????????????????????????????????????????
+    // ??? Mï¿½TODOS INTERNOS ????????????????????????????????????????????????????
 
     IEnumerator VentanaDeDecision()
     {
@@ -208,15 +227,15 @@ public class Act1Manager : MonoBehaviour
     {
         decisionTomada = true;
 
-        Debug.Log("RUTA B: El jugador NO volvió a intentar.");
+        Debug.Log("RUTA B: El jugador NO volviï¿½ a intentar.");
         Debug.Log("Tiempo transcurrido: " + tiempoTranscurrido + " segundos.");
-        Debug.Log("Competencia: Autorregulación emocional (persistencia)");
+        Debug.Log("Competencia: Autorregulaciï¿½n emocional (persistencia)");
         Debug.Log("Tendencia: debilidad");
 
         EventLogger.Instance.RegistrarEvento(
-            competencia: "Autorregulación emocional (persistencia)",
-            situacion: "Recibió retroalimentación negativa en su primera entrega",
-            comportamiento: "No retomó el proyecto dentro del tiempo disponible",
+            competencia: "Autorregulaciï¿½n emocional (persistencia)",
+            situacion: "Recibiï¿½ retroalimentaciï¿½n negativa en su primera entrega",
+            comportamiento: "No retomï¿½ el proyecto dentro del tiempo disponible",
             tiempo: tiempoTranscurrido,
             tendencia: "debilidad"
         );
