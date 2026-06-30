@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using Yarn.Unity;
+using TMPro;
 
 public class Act1Manager : MonoBehaviour
 {
@@ -12,45 +13,75 @@ public class Act1Manager : MonoBehaviour
     [Header("Referencias")]
     public Transform profesorMirada;
     public Camera playerCamera;
-    public GameObject notaObjeto;          // empieza INACTIVO en el Inspector
-    public Animator profesorAnimator;      // opcional � para animaci�n de retirarse
+    public GameObject notaObjeto;
+    public Animator profesorAnimator;
 
     [Header("Clips de audio del profesor")]
     public AudioSource profesorAudioSource;
-    public AudioClip clipAproximacion;       // "Buenas. �Ese es tu avance?"
-    public AudioClip clipRevisionSilencio;   // sonido ambiente / pausa mientras revisa
-    public AudioClip clipBuenaBase;          // "A ver... mmm. Tiene buena base..."
-    public AudioClip clipFeedbackDetallado;  // "La parte de ensamblaje..."
-    public AudioClip clipCriterio;           // "M�ralo, te dej� algunos comentarios..."
-    public AudioClip clipTomateElTiempo;     // "T�mate el tiempo que necesites."
-    public AudioClip clipBienSigueAsi;       // Ruta A: "Bien. Eso est� mejor."
+    public AudioClip clipAproximacion;
+    public AudioClip clipRevisionSilencio;
+    public AudioClip clipBuenaBase;
+    public AudioClip clipFeedbackDetallado;
+    public AudioClip clipCriterio;
+    public AudioClip clipTomateElTiempo;
+    public AudioClip clipBienSigueAsi;
 
-    [Header("Compa�ero de fondo (Fase 1E)")]
-    public AudioSource companeroAudioSource;
-    public AudioClip clipCompanero;
+    [Header("Compañero de fondo (Fase 1E)")]
     public float tiempoLineaCompanero = 10f;
+    public string nodoCompaniero = "Acto1_Companiero";
 
     [Header("Post-entrega")]
     public PlayerController playerController;
     public InteractableObject laptopInteractable;
 
-    [Header("Configuraci�n")]
+    [Header("HDD")]
+    public Transform hddModel;
+    public GameObject proyectoObjeto;
+    public SnapPointHDDTrigger snapPointHDD;
+
+    [Header("Laptop UI")]
+    public GameObject laptopPanel;
+    public TMP_Text workingText;
+
+    [Header("Configuración")]
     public float ventanaMirada = 2.5f;
-    public float ventanaReintento = 30f;
-    public float radioAproximacion = 2f;   // distancia para disparar el di�logo de aproximaci�n
+    public float ventanaReintento = 45f;
+    public float radioAproximacion = 2f;
 
     private bool aproximacionDisparada = false;
     private bool entregaRealizada = false;
     private bool decisionTomada = false;
-    private Transform proyectoTransform;   // para medir la distancia de aproximaci�n
+    private Transform proyectoTransform;
+    private bool yaUsoLaptop = false;
+    private bool hddCompletado = false;
+    private GameObject proyectoEnHDD;
 
-    // MesaEntregasTrigger llama esto al detectar que el jugador est� cerca
-    // con el proyecto en mano (ANTES de soltar)
+    void Start()
+    {
+        if (workingText == null)
+        {
+            var wt = GameObject.Find("WorkingText");
+            if (wt != null) workingText = wt.GetComponent<TMP_Text>();
+        }
+
+        if (laptopPanel == null)
+        {
+            laptopPanel = GameObject.Find("LaptopPanel");
+        }
+
+        if (laptopInteractable != null)
+        {
+            var showPanel = laptopInteractable.GetComponent<ShowInfoPanel>();
+            if (showPanel != null) Destroy(showPanel);
+
+            laptopInteractable.onInteract.AddListener(OnLaptopInteraction);
+        }
+    }
+
     public void SetProyectoTransform(Transform t) => proyectoTransform = t;
 
     void Update()
     {
-        // Detecta proximidad del proyecto para disparar el primer di�logo
         if (!aproximacionDisparada && proyectoTransform != null)
         {
             float dist = Vector3.Distance(proyectoTransform.position, transform.position);
@@ -62,7 +93,6 @@ public class Act1Manager : MonoBehaviour
         }
     }
 
-    // MesaEntregasTrigger.Entregar() llama esto cuando el proyecto llega al SnapPoint
     public void OnEntregaIniciada()
     {
         if (entregaRealizada) return;
@@ -80,7 +110,7 @@ public class Act1Manager : MonoBehaviour
         if (notaObjeto != null)
         {
             notaObjeto.SetActive(true);
-            Debug.Log("Nota mostrada despu�s del di�logo inicial.");
+            Debug.Log("Nota mostrada después del diálogo inicial.");
         }
 
         yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
@@ -88,7 +118,12 @@ public class Act1Manager : MonoBehaviour
         if (playerController != null)
             playerController.enabled = false;
 
-        yield return new WaitForSeconds(3f);
+        if (hddModel != null && playerCamera != null)
+            yield return RotarCamaraHaciaHDD();
+
+        float restante = 3f - 0.8f;
+        if (restante > 0)
+            yield return new WaitForSeconds(restante);
 
         dialogueRunner.StartDialogue("Acto1_Reaccion");
 
@@ -97,23 +132,154 @@ public class Act1Manager : MonoBehaviour
         if (laptopInteractable != null)
             laptopInteractable.canInteract = true;
 
+        if (snapPointHDD != null)
+        {
+            snapPointHDD.gameObject.SetActive(true);
+            snapPointHDD.activo = true;
+        }
+
         if (playerController != null)
             playerController.enabled = true;
 
-        Debug.Log("Iniciando ventana de decisi�n desde c�digo.");
+        Debug.Log("Iniciando ventana de decisión desde código.");
         IniciarVentanaDecision();
     }
 
-    // Llamado por MesaEntregasTrigger cuando el jugador reintenta (Ruta A)
+    private IEnumerator RotarCamaraHaciaHDD()
+    {
+        Vector3 dir = (hddModel.position - playerCamera.transform.position).normalized;
+        Quaternion targetBodyRot = Quaternion.LookRotation(new Vector3(dir.x, 0, dir.z));
+        Quaternion startBodyRot = playerController.transform.rotation;
+
+        Vector3 targetLookDir = (hddModel.position - playerCamera.transform.position).normalized;
+        Quaternion targetCamRot = Quaternion.LookRotation(targetLookDir);
+        Quaternion startCamRot = playerCamera.transform.rotation;
+
+        float duration = 0.8f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            playerController.transform.rotation = Quaternion.Slerp(startBodyRot, targetBodyRot, t);
+            playerCamera.transform.rotation = Quaternion.Slerp(startCamRot, targetCamRot, t);
+
+            yield return null;
+        }
+
+        playerController.transform.rotation = targetBodyRot;
+        playerCamera.transform.rotation = targetCamRot;
+    }
+
+    public void OnLaptopInteraction()
+    {
+        if (yaUsoLaptop) return;
+        yaUsoLaptop = true;
+
+        StartCoroutine(FlujoLaptop());
+    }
+
+    private IEnumerator FlujoLaptop()
+    {
+        if (playerController != null)
+            playerController.enabled = false;
+
+        if (laptopPanel != null)
+            laptopPanel.SetActive(true);
+
+        if (workingText != null)
+            yield return AnimarWorkingText();
+
+        if (laptopPanel != null)
+            laptopPanel.SetActive(false);
+
+        dialogueRunner.StartDialogue("Acto1_Laptop_Mejora");
+
+        yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
+
+        GameSessionData.UsoLaptop = true;
+
+        EventLogger.Instance.RegistrarEvento(
+            competencia: "Autorregulación emocional (persistencia)",
+            situacion: "Recibió retroalimentación negativa en su primera entrega",
+            comportamiento: "Usó la laptop para mejorar el proyecto digitalmente",
+            tiempo: 0f,
+            tendencia: "fortaleza"
+        );
+
+        if (playerController != null)
+            playerController.enabled = true;
+    }
+
+    private IEnumerator AnimarWorkingText()
+    {
+        string baseText = "Working";
+        float stepDuration = 0.3f;
+        int cycles = 3;
+
+        for (int c = 0; c < cycles; c++)
+        {
+            workingText.text = baseText;               yield return new WaitForSeconds(stepDuration);
+            workingText.text = baseText + ".";          yield return new WaitForSeconds(stepDuration);
+            workingText.text = baseText + "..";         yield return new WaitForSeconds(stepDuration);
+            workingText.text = baseText + "...";        yield return new WaitForSeconds(stepDuration);
+        }
+
+        workingText.text = baseText + "...";
+    }
+
+    public void OnProyectoEnHDD(GameObject proyecto)
+    {
+        if (hddCompletado) return;
+        hddCompletado = true;
+        GameSessionData.HDDCompletado = true;
+        proyectoEnHDD = proyecto;
+
+        if (dialogueRunner.IsDialogueRunning)
+            dialogueRunner.Stop();
+
+        StartCoroutine(FlujoHDD());
+    }
+
+    private IEnumerator FlujoHDD()
+    {
+        if (playerController != null)
+            playerController.enabled = false;
+
+        dialogueRunner.StartDialogue("Acto1_HDD_Mejora");
+
+        yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
+
+        if (proyectoEnHDD != null)
+        {
+            var interactable = proyectoEnHDD.GetComponent<InteractableObject>();
+            if (interactable != null)
+                interactable.canInteract = true;
+
+            proyectoEnHDD.transform.SetParent(null);
+        }
+
+        if (snapPointHDD != null)
+        {
+            snapPointHDD.activo = false;
+            var col = snapPointHDD.GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+        }
+
+        if (playerController != null)
+            playerController.enabled = true;
+    }
+
     public void OnReintentoCompletado(float tiempoTranscurrido)
     {
         if (decisionTomada) return;
         decisionTomada = true;
 
         EventLogger.Instance.RegistrarEvento(
-            competencia: "Autorregulaci�n emocional (persistencia)",
-            situacion: "Recibi� retroalimentaci�n negativa en su primera entrega",
-            comportamiento: "Retom� el proyecto, lo corrigi� y volvi� a entregarlo",
+            competencia: "Autorregulación emocional (persistencia)",
+            situacion: "Recibió retroalimentación negativa en su primera entrega",
+            comportamiento: "Retomó el proyecto, lo corrigió y volvió a entregarlo",
             tiempo: tiempoTranscurrido,
             tendencia: "fortaleza"
         );
@@ -123,12 +289,19 @@ public class Act1Manager : MonoBehaviour
         GameSessionData.Reintento = true;
         GameSessionData.TiempoReintento = tiempoTranscurrido;
         ReporteManager.Instance.GuardarReporte();
+
+        StartCoroutine(EsperarDialogoYFade());
     }
 
-    // ??? YARN COMMANDS ???????????????????????????????????????????????????????
+    IEnumerator EsperarDialogoYFade()
+    {
+        yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
+        yield return FadeOut();
+        EventLogger.Instance.ExportarJSON();
+        if (playerController != null)
+            playerController.enabled = false;
+    }
 
-    // <<reproducir_linea "nombre_clip">>
-    // Yarn espera a que el audio termine antes de seguir con la siguiente l�nea
     [YarnCommand("reproducir_linea")]
     public IEnumerator ReproducirLinea(string nombreClip)
     {
@@ -138,23 +311,20 @@ public class Act1Manager : MonoBehaviour
         {
             profesorAudioSource.clip = clip;
             profesorAudioSource.Play();
-            yield return new WaitForSeconds(clip.length + 0.2f); // peque�o respiro entre l�neas
+            yield return new WaitForSeconds(clip.length + 0.2f);
         }
         else
         {
-            yield return new WaitForSeconds(1.8f); // respaldo mientras no hay audio grabado
+            yield return new WaitForSeconds(1.8f);
         }
     }
 
-    // <<mostrar_nota>>
-    // La nota aparece EXACTAMENTE aqu�, no al inicio del di�logo
     [YarnCommand("mostrar_nota")]
     public void MostrarNota()
     {
         if (notaObjeto != null) notaObjeto.SetActive(true);
     }
-    // <<medir_mirada>>
-    // Mide si el jugador sostiene contacto visual con el profesor
+
     [YarnCommand("medir_mirada")]
     public IEnumerator MedirMirada()
     {
@@ -172,8 +342,8 @@ public class Act1Manager : MonoBehaviour
         string tendencia = porcentaje >= 50f ? "fortaleza" : "debilidad";
 
         EventLogger.Instance.RegistrarEvento(
-            competencia: "Autorregulaci�n emocional (control emocional)",
-            situacion: "El profesor explica su retroalimentaci�n frente al jugador",
+            competencia: "Autorregulación emocional (control emocional)",
+            situacion: "El profesor explica su retroalimentación frente al jugador",
             comportamiento: $"Sostuvo la mirada el {porcentaje:F0}% del tiempo",
             tiempo: ventanaMirada,
             tendencia: tendencia
@@ -181,8 +351,6 @@ public class Act1Manager : MonoBehaviour
         GameSessionData.PorcentajeMirada = porcentaje;
     }
 
-    // <<profesor_retirarse>>
-    // Activa animaci�n de caminar hacia el escritorio (opcional)
     [YarnCommand("profesor_retirarse")]
     public void ProfesorRetirarse()
     {
@@ -190,15 +358,11 @@ public class Act1Manager : MonoBehaviour
             profesorAnimator.SetTrigger("Retirarse");
     }
 
-    // <<iniciar_ventana_decision>>
-    // Arranca el timer de 30s y el compa�ero de fondo
     [YarnCommand("iniciar_ventana_decision")]
     public void IniciarVentanaDecision()
     {
         StartCoroutine(VentanaDeDecision());
     }
-
-    // ??? M�TODOS INTERNOS ????????????????????????????????????????????????????
 
     IEnumerator VentanaDeDecision()
     {
@@ -207,46 +371,126 @@ public class Act1Manager : MonoBehaviour
 
         while (t < ventanaReintento && !decisionTomada)
         {
-            if (!lineaReproducida && t >= tiempoLineaCompanero)
+            if (!lineaReproducida && t >= tiempoLineaCompanero && !hddCompletado)
             {
                 lineaReproducida = true;
-                if (companeroAudioSource != null && clipCompanero != null)
+                dialogueRunner.StartDialogue(nodoCompaniero);
+                float tc = 0f;
+                while (tc < 2f && dialogueRunner.IsDialogueRunning)
                 {
-                    companeroAudioSource.clip = clipCompanero;
-                    companeroAudioSource.Play();
+                    tc += Time.deltaTime;
+                    yield return null;
                 }
+                if (dialogueRunner.IsDialogueRunning)
+                    dialogueRunner.Stop();
             }
             t += Time.deltaTime;
             yield return null;
         }
 
-        if (!decisionTomada) RegistrarRutaB(t);
+        if (!decisionTomada) yield return RegistrarRutaB(t);
     }
 
-    void RegistrarRutaB(float tiempoTranscurrido)
+    IEnumerator RegistrarRutaB(float tiempoTranscurrido)
     {
         decisionTomada = true;
 
-        Debug.Log("RUTA B: El jugador NO volvi� a intentar.");
+        Debug.Log("RUTA B: El jugador NO volvió a intentar.");
         Debug.Log("Tiempo transcurrido: " + tiempoTranscurrido + " segundos.");
-        Debug.Log("Competencia: Autorregulaci�n emocional (persistencia)");
-        Debug.Log("Tendencia: debilidad");
 
         EventLogger.Instance.RegistrarEvento(
-            competencia: "Autorregulaci�n emocional (persistencia)",
-            situacion: "Recibi� retroalimentaci�n negativa en su primera entrega",
-            comportamiento: "No retom� el proyecto dentro del tiempo disponible",
+            competencia: "Autorregulación emocional (persistencia)",
+            situacion: "Recibió retroalimentación negativa en su primera entrega",
+            comportamiento: "No retomó el proyecto dentro del tiempo disponible",
             tiempo: tiempoTranscurrido,
             tendencia: "debilidad"
         );
 
-        if (profesorNavMeshMover != null)
-        {
-            profesorNavMeshMover.Retirarse();
-        }
         GameSessionData.Reintento = false;
         GameSessionData.TiempoReintento = tiempoTranscurrido;
         ReporteManager.Instance.GuardarReporte();
+
+        if (profesorAnimator != null)
+            profesorAnimator.applyRootMotion = false;
+
+        if (profesorNavMeshMover != null)
+            profesorNavMeshMover.Retirarse();
+
+        yield return new WaitForSeconds(2f);
+
+        if (profesorNavMeshMover != null && profesorNavMeshMover.agent != null)
+        {
+            float esperaMax = 10f;
+            float t = 0f;
+            while (t < esperaMax && profesorNavMeshMover.agent.pathPending)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
+            while (t < esperaMax && profesorNavMeshMover.agent.remainingDistance > 0.5f)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        Transform doorCube = null;
+        var puertaAula = GameObject.Find("PuertaAula");
+        if (puertaAula != null)
+        {
+            var child = puertaAula.transform.Find("a door (2)");
+            if (child != null)
+            {
+                var cube = child.Find("Cube_10");
+                if (cube != null) doorCube = cube;
+            }
+        }
+
+        if (doorCube != null)
+        {
+            Quaternion from = doorCube.localRotation;
+            Quaternion to = Quaternion.Euler(0, 0, 0);
+            float duracion = 1.2f;
+            float t = 0f;
+            while (t < duracion)
+            {
+                t += Time.deltaTime;
+                doorCube.localRotation = Quaternion.Slerp(from, to, t / duracion);
+                yield return null;
+            }
+            doorCube.localRotation = to;
+        }
+
+        yield return FadeOut();
+
+        EventLogger.Instance.ExportarJSON();
+
+        if (playerController != null)
+            playerController.enabled = false;
+    }
+
+    IEnumerator FadeOut()
+    {
+        GameObject fadeObj = GameObject.Find("Fader/Fade");
+        if (fadeObj == null) yield break;
+
+        var img = fadeObj.GetComponent<UnityEngine.UI.Image>();
+        if (img == null) yield break;
+
+        float duration = 1.5f;
+        float elapsed = 0f;
+        Color c = img.color;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            c.a = Mathf.Clamp01(elapsed / duration);
+            img.color = c;
+            yield return null;
+        }
+
+        c.a = 1f;
+        img.color = c;
     }
 
     bool MiraAlProfesor()

@@ -36,6 +36,7 @@ title: Acto1_Entrega
 Profesor: A ver... mmm. Tiene buena base, pero le falta trabajo todavía.
 Profesor: La parte de ensamblaje todavía no cierra bien, acá, en esta sección.
 Profesor: Míralo, te dejé algunos comentarios. Te lo dejo a tu criterio.
+<<medir_mirada>>
 Profesor: Yo solo evalúo lo que entregues al final del ciclo.
 Profesor: Tómate el tiempo que necesites.
 ===
@@ -43,6 +44,25 @@ Profesor: Tómate el tiempo que necesites.
 title: Acto1_Reaccion
 ---
 Yo: ¿Debería hacer algo?
+===
+
+title: Acto1_HDD_Mejora
+---
+Yo: ¿Si lo arreglo mejorará la nota?
+<<wait 1>>
+Yo: ...
+<<wait 1>>
+Yo: Creo que ahora está mejor.
+===
+
+title: Acto1_Laptop_Mejora
+---
+Yo: Creo que con este otro arreglo queda mejor.
+===
+
+title: Acto1_Companiero
+---
+Compañero: ¡No me voy a rendir!
 ===
 
 title: Acto1_Reintento
