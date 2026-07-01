@@ -26,10 +26,6 @@ public class Act1Manager : MonoBehaviour
     public AudioClip clipTomateElTiempo;
     public AudioClip clipBienSigueAsi;
 
-    [Header("Compañero de fondo (Fase 1E)")]
-    public float tiempoLineaCompanero = 10f;
-    public string nodoCompaniero = "Acto1_Companiero";
-
     [Header("Post-entrega")]
     public PlayerController playerController;
     public InteractableObject laptopInteractable;
@@ -38,6 +34,9 @@ public class Act1Manager : MonoBehaviour
     public Transform hddModel;
     public GameObject proyectoObjeto;
     public SnapPointHDDTrigger snapPointHDD;
+
+    [Header("Outline Flow")]
+    public OutlineFlow outlineFlow;
 
     [Header("Laptop UI")]
     public GameObject laptopPanel;
@@ -76,6 +75,7 @@ public class Act1Manager : MonoBehaviour
 
             laptopInteractable.onInteract.AddListener(OnLaptopInteraction);
         }
+
     }
 
     public void SetProyectoTransform(Transform t) => proyectoTransform = t;
@@ -98,6 +98,10 @@ public class Act1Manager : MonoBehaviour
         if (entregaRealizada) return;
 
         entregaRealizada = true;
+
+        if (outlineFlow != null)
+            outlineFlow.DesactivarOutlineMesaProfesor();
+
         StartCoroutine(DialogoEntregaConNota());
     }
 
@@ -271,10 +275,15 @@ public class Act1Manager : MonoBehaviour
             playerController.enabled = true;
     }
 
+    public bool PuedeReintentar() => hddCompletado;
+
     public void OnReintentoCompletado(float tiempoTranscurrido)
     {
         if (decisionTomada) return;
         decisionTomada = true;
+
+        if (outlineFlow != null)
+            outlineFlow.DesactivarOutlineMesaProfesor();
 
         EventLogger.Instance.RegistrarEvento(
             competencia: "Autorregulación emocional (persistencia)",
@@ -297,7 +306,6 @@ public class Act1Manager : MonoBehaviour
     {
         yield return new WaitUntil(() => !dialogueRunner.IsDialogueRunning);
         yield return FadeOut();
-        EventLogger.Instance.ExportarJSON();
         if (playerController != null)
             playerController.enabled = false;
     }
@@ -366,24 +374,10 @@ public class Act1Manager : MonoBehaviour
 
     IEnumerator VentanaDeDecision()
     {
-        bool lineaReproducida = false;
         float t = 0f;
 
         while (t < ventanaReintento && !decisionTomada)
         {
-            if (!lineaReproducida && t >= tiempoLineaCompanero && !hddCompletado)
-            {
-                lineaReproducida = true;
-                dialogueRunner.StartDialogue(nodoCompaniero);
-                float tc = 0f;
-                while (tc < 2f && dialogueRunner.IsDialogueRunning)
-                {
-                    tc += Time.deltaTime;
-                    yield return null;
-                }
-                if (dialogueRunner.IsDialogueRunning)
-                    dialogueRunner.Stop();
-            }
             t += Time.deltaTime;
             yield return null;
         }
@@ -462,8 +456,6 @@ public class Act1Manager : MonoBehaviour
         }
 
         yield return FadeOut();
-
-        EventLogger.Instance.ExportarJSON();
 
         if (playerController != null)
             playerController.enabled = false;

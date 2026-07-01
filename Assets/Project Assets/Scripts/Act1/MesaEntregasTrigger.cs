@@ -10,9 +10,9 @@ public class MesaEntregasTrigger : MonoBehaviour
     public PlayerInteractor playerInteractor;
     public Transform snapPoint;
 
-    [Header("Configuración")]
-    public float radioEntrega = 0.6f;       // distancia para snap automático al presionar E
-    public float radioAproximacion = 2.5f;  // distancia para disparar el primer diálogo
+    [Header("Configuraciï¿½n")]
+    public float radioEntrega = 0.6f;       // distancia para snap automï¿½tico al presionar E
+    public float radioAproximacion = 2.5f;  // distancia para disparar el primer diï¿½logo
 
     private bool primeraEntrega = false;
     private bool aproximacionAvisada = false;
@@ -28,7 +28,7 @@ public class MesaEntregasTrigger : MonoBehaviour
         GameObject proyecto = playerInteractor.GetHeldObject();
         if (proyecto == null || !proyecto.CompareTag("Proyecto")) return;
 
-        // Avisa al Act1Manager la posición del proyecto para que mida proximidad
+        // Avisa al Act1Manager la posiciï¿½n del proyecto para que mida proximidad
         if (!aproximacionAvisada)
         {
             act1Manager.SetProyectoTransform(proyecto.transform);
@@ -46,21 +46,33 @@ public class MesaEntregasTrigger : MonoBehaviour
 
     public void Entregar(GameObject objeto)
     {
-        objeto.transform.SetParent(snapPoint);
-        objeto.transform.localPosition = Vector3.zero;
-        objeto.transform.localRotation = Quaternion.identity;
-
-        if (objeto.TryGetComponent(out Rigidbody rb))
-            rb.isKinematic = true;
-
         if (!primeraEntrega)
         {
             primeraEntrega = true;
             tiempoInicioVentana = Time.time;
+
+            objeto.transform.SetParent(snapPoint);
+            objeto.transform.localPosition = Vector3.zero;
+            objeto.transform.localRotation = Quaternion.identity;
+
+            if (objeto.TryGetComponent(out Rigidbody rb))
+                rb.isKinematic = true;
+
             act1Manager.OnEntregaIniciada();
         }
         else
         {
+            objeto.transform.SetParent(snapPoint);
+            objeto.transform.localPosition = Vector3.zero;
+            objeto.transform.localRotation = Quaternion.identity;
+
+            if (objeto.TryGetComponent(out Rigidbody rb))
+                rb.isKinematic = true;
+
+            // Solo cuenta como reintento si pasï¿½ por el HDD
+            if (!act1Manager.PuedeReintentar())
+                return;
+
             float tiempoTranscurrido = Time.time - tiempoInicioVentana;
             act1Manager.OnReintentoCompletado(tiempoTranscurrido);
         }
