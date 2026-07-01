@@ -20,8 +20,29 @@ public class ReporteManager : MonoBehaviour
         sb.AppendLine($"Fecha: {DateTime.Now:dd/MM/yyyy HH:mm}");
         sb.AppendLine();
 
-        // ─ Eventos ─
         var eventos = EventLogger.Instance.ObtenerResultados();
+
+        // Asegurar que el evento de la laptop siempre aparezca
+        bool hayLaptop = false;
+        foreach (var e in eventos)
+        {
+            if (e.comportamiento != null && e.comportamiento.Contains("laptop"))
+            {
+                hayLaptop = true;
+                break;
+            }
+        }
+        if (!hayLaptop)
+        {
+            eventos.Add(new ResultadoEvento(
+                competencia: "Autorregulaci\u00F3n emocional (persistencia)",
+                situacion: "Recibi\u00F3 retroalimentaci\u00F3n negativa en su primera entrega",
+                comportamiento: "No us\u00F3 la laptop para mejorar el proyecto digitalmente",
+                tiempo: 0f,
+                tendencia: "debilidad"
+            ));
+        }
+
         for (int i = 0; i < eventos.Count; i++)
         {
             var e = eventos[i];
@@ -37,7 +58,7 @@ public class ReporteManager : MonoBehaviour
             sb.AppendLine();
         }
 
-        // ─ Resumen ─
+        // Resumen
         string tendencia = GameSessionData.Reintento
             ? "Fortaleza: persistencia"
             : "Debilidad: abandono";
